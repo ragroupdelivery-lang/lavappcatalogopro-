@@ -1,0 +1,5 @@
+{
+  "name": "Painel de Gestão de Lavanderia",
+  "description": "Um painel moderno e visualmente atraente para gerenciar um serviço de lavanderia. Ele fornece visualizações rápidas das principais métricas, como receita, pedidos e atividade do cliente, com gráficos e uma lista de transações recentes.",
+  "requestFramePermissions": []
+}
