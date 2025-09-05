@@ -12,7 +12,6 @@ const formatCurrency = (value: number) => {
 const StatCard: React.FC<Stat> = ({ title, value, change, changeType, iconName }) => {
   const isIncrease = changeType === 'increase';
   const changeColor = isIncrease ? 'text-green-500' : 'text-red-500';
-  const iconBgColor = isIncrease ? 'bg-green-100' : 'bg-red-100';
 
   const displayValue = typeof value === 'number' ? formatCurrency(value) : value;
 
@@ -26,8 +25,8 @@ const StatCard: React.FC<Stat> = ({ title, value, change, changeType, iconName }
           <span className="text-xs text-brand-gray-400 ml-1">vs mês passado</span>
         </div>
       </div>
-      <div className={`p-3 rounded-full ${iconBgColor}`}>
-        <Icon name={iconName} className={`h-6 w-6 ${changeColor}`} />
+      <div className={`p-3 rounded-full bg-brand-gray-100`}>
+        <Icon name={iconName} className={`h-6 w-6 text-brand-blue`} />
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
       return (
         <div className="bg-white p-3 border border-brand-gray-200 rounded-lg shadow-lg">
           <p className="font-semibold text-brand-gray-700">{label}</p>
-          <p className="text-brand-blue">{`Receita: R$${payload[0].value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</p>
+          <p className="text-brand-blue">{`Receita: ${payload[0].value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}</p>
         </div>
       );
     }
@@ -24,12 +24,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
       <ResponsiveContainer>
         <BarChart
           data={data}
-          margin={{
-            top: 5,
-            right: 20,
-            left: -10,
-            bottom: 5,
-          }}
+          margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
           barSize={20}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />

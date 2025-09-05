@@ -1,17 +1,20 @@
 import React from 'react';
 import Icon from './Icon';
 import type { IconName } from '../types';
+import { useUser } from '../contexts/UserContext';
 
 interface NavLinkProps {
   iconName: IconName;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }
 
-const NavLink: React.FC<NavLinkProps> = ({ iconName, label, active = false }) => {
+const NavLink: React.FC<NavLinkProps> = ({ iconName, label, active = false, onClick }) => {
   return (
     <a
       href="#"
+      onClick={onClick}
       className={`flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 ${
         active
           ? 'bg-brand-blue text-white shadow-lg'
@@ -24,7 +27,13 @@ const NavLink: React.FC<NavLinkProps> = ({ iconName, label, active = false }) =>
   );
 };
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+    setActiveView: (view: 'dashboard' | 'customers') => void;
+    activeView: 'dashboard' | 'customers';
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ setActiveView, activeView }) => {
+  const { logout } = useUser();
   return (
     <div className="flex flex-col w-64 bg-white shadow-xl">
       <div className="flex items-center justify-center h-20 border-b">
@@ -34,25 +43,15 @@ const Sidebar: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4">
         <nav className="space-y-2">
           <p className="px-4 text-xs font-semibold text-brand-gray-400 uppercase tracking-wider">Menu</p>
-          <NavLink iconName="view-grid" label="Painel" active />
-          <NavLink iconName="shopping-bag" label="Pedidos" />
-          <NavLink iconName="user-group" label="Clientes" />
-          <NavLink iconName="document-report" label="Relatórios" />
-          <NavLink iconName="inbox" label="Caixa de Entrada" />
+          <NavLink iconName="view-grid" label="Painel" active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} />
+          <NavLink iconName="user-group" label="Clientes" active={activeView === 'customers'} onClick={() => setActiveView('customers')} />
           
           <p className="px-4 pt-4 text-xs font-semibold text-brand-gray-400 uppercase tracking-wider">Conta</p>
           <NavLink iconName="cog" label="Configurações" />
-          <NavLink iconName="question-mark-circle" label="Ajuda" />
         </nav>
       </div>
       <div className="p-4 border-t">
-        <a
-          href="#"
-          className="flex items-center px-4 py-2.5 rounded-lg text-brand-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
-        >
-          <Icon name="logout" className="h-5 w-5" />
-          <span className="ml-4 font-medium">Sair</span>
-        </a>
+        <NavLink iconName="logout" label="Sair" onClick={logout} />
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
-// Fix: Provide definitions for types used throughout the application.
-export type IconName =
+export type IconName = 
   | 'currency-dollar'
   | 'shopping-bag'
   | 'users'
@@ -16,7 +15,9 @@ export type IconName =
   | 'view-grid'
   | 'document-report'
   | 'user-group'
-  | 'inbox';
+  | 'inbox'
+  | 'pencil'
+  | 'plus';
 
 export interface Stat {
   title: string;
@@ -26,17 +27,30 @@ export interface Stat {
   iconName: IconName;
 }
 
-export enum OrderStatus {
-  Completed = 'Concluído',
-  Processing = 'Processando',
-  Cancelled = 'Cancelado',
-}
+export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
 
 export interface Order {
   id: number;
-  customerName: string;
-  customerAvatar: string;
-  created_at: string;
-  amount: number;
+  customer_name: string;
+  customer_avatar: string;
+  service: string;
   status: OrderStatus;
+  created_at: string;
+  total_price: number;
+}
+
+export interface UserProfile {
+  id: string;
+  full_name: string;
+  avatar_url: string;
+  role: 'admin' | 'customer';
+}
+
+export interface Customer {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url: string;
+    total_spent: number;
+    last_order: string;
 }
