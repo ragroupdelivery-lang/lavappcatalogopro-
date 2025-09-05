@@ -1,14 +1,16 @@
+// Fix: Provide content for UserContext.tsx.
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Session, User } from '@supabase/supabase-js';
-import type { Profile } from '../types';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import type { UserProfile } from '../types';
+
+type User = SupabaseUser & UserProfile;
 
 interface UserContextType {
-  session: Session | null;
   user: User | null;
-  profile: Profile | null;
+  session: Session | null;
   loading: boolean;
-  logout: () => Promise<void>;
+  logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -16,72 +18,76 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
+    const getSessionAndProfile = async () => {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(session);
+        if (session?.user) {
+            const { data: userProfile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user profile:', error.message);
+            }
+            // Combine supabase user and profile. Profile might be null if it hasn't been created yet.
+            setUser({ ...session.user, ...userProfile } as User);
+        }
         setLoading(false);
-    }
-    
-    getInitialSession();
+    };
+
+    getSessionAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
-        if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-          // No need to set loading to false here, already done
-        } else if (_event === 'SIGNED_OUT') {
-          setProfile(null)
+        if (session?.user) {
+            const { data: userProfile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+            
+            if (error) {
+                console.error('Error fetching user profile on auth state change:', error.message);
+            }
+            setUser({ ...session.user, ...userProfile } as User);
+        } else {
+            setUser(null);
         }
+        setLoading(false);
       }
     );
 
     return () => {
-      authListener.subscription.unsubscribe();
+      authListener?.subscription.unsubscribe();
     };
   }, []);
 
-  useEffect(() => {
-    if (user && session) {
-      const fetchProfile = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching profile:', error.message);
-        } else if (data) {
-          setProfile(data);
-        }
-        setLoading(false);
-      };
-      fetchProfile();
-    } else {
-      setProfile(null);
-    }
-  }, [user, session]);
-
   const logout = async () => {
     await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
   };
 
   const value = {
     session,
     user,
-    profile,
     loading,
     logout,
   };
 
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+  return <UserContext.Provider value={value}>{!loading && children}</UserContext.Provider>;
 };
 
 export const useUser = () => {

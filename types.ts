@@ -1,3 +1,7 @@
+// Fix: Provide content for types.ts, defining all shared types for the application.
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+
+// Based on components/Icon.tsx
 export type IconName =
   | 'currency-dollar'
   | 'shopping-bag'
@@ -19,40 +23,44 @@ export type IconName =
   | 'pencil'
   | 'plus';
 
-export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
-
-export interface Order {
-  id: number;
-  customer_name: string;
-  customer_avatar_url: string;
-  service_type: string;
-  status: OrderStatus;
-  created_at: string;
-  total_price: number;
-  user_id: string;
-}
-
+// Based on components/StatCard.tsx
 export interface Stat {
-    title: string;
-    value: string | number;
-    change: string;
-    changeType: 'increase' | 'decrease';
-    iconName: IconName;
+  title: string;
+  value: string | number;
+  change: string;
+  changeType: 'increase' | 'decrease';
+  iconName: IconName;
 }
 
-export interface Profile {
-  id: string;
-  full_name?: string;
-  avatar_url?: string;
-  role?: 'admin' | 'customer';
+// User Profile, extending Supabase user with app-specific fields
+export interface UserProfile {
+    id: string;
+    email?: string;
+    full_name?: string;
+    avatar_url?: string;
+    role: 'admin' | 'customer' | 'delivery';
 }
+
+export type User = SupabaseUser & UserProfile;
+
+// Based on components/Dashboard.tsx and components/OrdersTable.tsx
+export type OrderStatus = 'Pendente' | 'Em Preparo' | 'Aguardando Coleta' | 'Em Trânsito' | 'Entregue' | 'Cancelado';
 
 export interface Customer {
     id: string;
-    full_name: string;
+    name: string;
     email: string;
-    avatar_url: string;
-    created_at: string;
-    total_orders: number;
-    total_spent: number;
+    phone: string;
+    address: string;
+}
+
+export interface Order {
+  id: number;
+  customer_id: string;
+  customer_name: string;
+  service: string;
+  created_at: string;
+  status: OrderStatus;
+  total: number;
+  delivery_person?: string;
 }
