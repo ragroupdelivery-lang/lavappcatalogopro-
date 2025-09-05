@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, initializationError } from '../supabaseClient';
-import { Session, User } from '@supabase/supabase-js';
-import type { UserProfile } from '../types';
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { supabase } from '../supabaseClient';
+import type { Session, User } from '@supabase/supabase-js';
+import type { Profile } from '../types';
 
 interface UserContextType {
-  user: User | null;
   session: Session | null;
-  profile: UserProfile | null;
+  user: User | null;
+  profile: Profile | null;
   loading: boolean;
   logout: () => Promise<void>;
 }
@@ -16,79 +16,61 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // CORREÇÃO: Se o Supabase falhou ao inicializar, interrompa aqui.
-    // A UI principal (App.tsx) cuidará de mostrar a mensagem de erro.
-    if (initializationError) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchSessionAndProfile = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if(sessionError) {
-          console.error("Error getting session:", sessionError);
-          setLoading(false);
-          return;
-      }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    };
-
-    fetchSessionAndProfile();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setLoading(true);
-        await fetchProfile(session.user.id);
+    const getInitialSession = async () => {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
         setLoading(false);
-      } else {
-        setProfile(null);
+    }
+    
+    getInitialSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
+          // No need to set loading to false here, already done
+        } else if (_event === 'SIGNED_OUT') {
+          setProfile(null)
+        }
       }
-    });
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
-    try {
+  useEffect(() => {
+    if (user && session) {
+      const fetchProfile = async () => {
+        setLoading(true);
         const { data, error } = await supabase
-            .from('profiles')
-            .select(`*, role`) // Assuming role is a column in profiles table
-            .eq('id', userId)
-            .single();
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-        if (error) throw error;
-        
-        if (data) {
-            setProfile(data as UserProfile);
+        if (error) {
+          console.error('Error fetching profile:', error.message);
+        } else if (data) {
+          setProfile(data);
         }
-    } catch (error) {
-        console.warn('Error fetching profile:', error);
-        setProfile(null);
+        setLoading(false);
+      };
+      fetchProfile();
+    } else {
+      setProfile(null);
     }
-  };
+  }, [user, session]);
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        console.error("Error signing out:", error);
-    }
-    setSession(null);
-    setUser(null);
-    setProfile(null);
+    await supabase.auth.signOut();
   };
 
   const value = {
@@ -99,7 +81,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout,
   };
 
-  return <UserContext.Provider value={value}>{!loading && children}</UserContext.Provider>;
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
 export const useUser = () => {

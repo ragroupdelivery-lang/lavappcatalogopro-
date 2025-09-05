@@ -1,16 +1,14 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-let supabase: SupabaseClient;
-let initializationError: Error | null = null;
+// It's recommended to use environment variables for these values.
+// For Create React App, use REACT_APP_ prefix. For Vite, use VITE_ prefix.
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  initializationError = new Error("As variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY são obrigatórias.");
-  supabase = {} as SupabaseClient;
-} else {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  // In a real app, you'd want to handle this more gracefully.
+  // For this context, we'll log an error to the console.
+  console.error("Supabase URL and/or Anon Key are missing. Please check your .env file.");
 }
 
-export { supabase, initializationError };
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
