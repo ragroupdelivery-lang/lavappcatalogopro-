@@ -1,16 +1,14 @@
-// Fix: Provide content for UserContext.tsx.
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import type { UserProfile } from '../types';
-
-type User = SupabaseUser & UserProfile;
+import { Session, User } from '@supabase/supabase-js';
+import { UserProfile } from '../types';
 
 interface UserContextType {
-  user: User | null;
   session: Session | null;
+  user: User | null;
+  profile: UserProfile | null;
   loading: boolean;
-  logout: () => void;
+  signOut: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -18,76 +16,69 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSessionAndProfile = async () => {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          setLoading(false);
-          return;
-        }
-        
-        setSession(session);
-        if (session?.user) {
-            const { data: userProfile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user profile:', error.message);
-            }
-            // Combine supabase user and profile. Profile might be null if it hasn't been created yet.
-            setUser({ ...session.user, ...userProfile } as User);
-        }
-        setLoading(false);
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
     };
 
-    getSessionAndProfile();
+    getInitialSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
         setSession(session);
-        if (session?.user) {
-            const { data: userProfile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-            
-            if (error) {
-                console.error('Error fetching user profile on auth state change:', error.message);
-            }
-            setUser({ ...session.user, ...userProfile } as User);
-        } else {
-            setUser(null);
-        }
-        setLoading(false);
+        setUser(session?.user ?? null);
       }
     );
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+  useEffect(() => {
+    if (user && !loading) {
+      const fetchProfile = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setProfile(null);
+        } else {
+          setProfile(data as UserProfile | null);
+        }
+      };
+      fetchProfile();
+    } else if (!user) {
+      setProfile(null);
+    }
+  }, [user, loading]);
+
+  const signOut = () => {
+    supabase.auth.signOut();
     setSession(null);
+    setUser(null);
+    setProfile(null);
   };
 
   const value = {
     session,
     user,
+    profile,
     loading,
-    logout,
+    signOut,
   };
 
-  return <UserContext.Provider value={value}>{!loading && children}</UserContext.Provider>;
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
 export const useUser = () => {

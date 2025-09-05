@@ -1,21 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { UserProvider } from './contexts/UserContext';
-import { ToastProvider } from './contexts/ToastContext';
+// Assuming a global CSS file for styling, like TailwindCSS's entry point.
+import './index.css';
 
-// Assuming a global CSS file for Tailwind CSS setup
-// import './index.css';
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Failed to find the root element');
+}
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const root = ReactDOM.createRoot(rootElement);
+
 root.render(
   <React.StrictMode>
-    <ToastProvider>
-      <UserProvider>
-        <App />
-      </UserProvider>
-    </ToastProvider>
+    <App />
   </React.StrictMode>
 );

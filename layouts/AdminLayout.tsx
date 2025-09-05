@@ -1,65 +1,28 @@
-// Fix: Provide content for AdminLayout.tsx.
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Dashboard from '../components/Dashboard';
-import { supabase } from '../supabaseClient';
-import type { Order, Stat } from '../types';
 import Modal from '../components/Modal';
+import { useData } from '../contexts/DataProvider';
+import { Order } from '../types';
 import { useToast } from '../contexts/ToastContext';
-
-// Mock Customers Component for demonstration to avoid import errors
-const Customers: React.FC = () => (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-brand-gray-800">Gerenciamento de Clientes</h2>
-        <p className="mt-2 text-brand-gray-600">Esta funcionalidade está em desenvolvimento.</p>
-    </div>
-);
+import { supabase } from '../supabaseClient';
 
 const AdminLayout: React.FC = () => {
-    const [activeView, setActiveView] = useState<'dashboard' | 'customers'>('dashboard');
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [stats, setStats] = useState<Stat[]>([]);
-    const [revenue, setRevenue] = useState<{ name: string; revenue: number }[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { stats, revenue, orders, loading, refreshData } = useData();
+    const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const { addToast } = useToast();
+    const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            // Fetch orders
-            const { data: ordersData, error: ordersError } = await supabase
-                .from('orders')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
-            if (ordersError) {
-                console.error('Error fetching orders:', ordersError);
-                addToast('Falha ao buscar pedidos', 'error');
-            } else {
-                setOrders(ordersData as Order[]);
-            }
-
-            // Mocking stats and revenue data as there are no tables for them
-            setStats([
-                { title: 'Receita Total', value: 71897, change: '+12.5%', changeType: 'increase', iconName: 'currency-dollar' },
-                { title: 'Novos Pedidos', value: '3,241', change: '+5.2%', changeType: 'increase', iconName: 'shopping-bag' },
-                { title: 'Novos Clientes', value: '1,204', change: '-1.8%', changeType: 'decrease', iconName: 'users' },
-                { title: 'Crescimento', value: '25.5%', change: '+7.3%', changeType: 'increase', iconName: 'chart-bar' },
-            ]);
-            setRevenue([
-                { name: 'Jan', revenue: 4000 }, { name: 'Fev', revenue: 3000 }, { name: 'Mar', revenue: 5000 },
-                { name: 'Abr', revenue: 4500 }, { name: 'Mai', revenue: 6000 }, { name: 'Jun', revenue: 5500 },
-                { name: 'Jul', revenue: 7000 },
-            ]);
-
-            setLoading(false);
-        };
-        fetchData();
-    }, [addToast]);
-
+    const adminNavLinks = [
+        { href: '#', label: 'Dashboard', icon: 'view-grid' as const },
+        { href: '#', label: 'Pedidos', icon: 'shopping-bag' as const },
+        { href: '#', label: 'Clientes', icon: 'user-group' as const },
+        { href: '#', label: 'Relatórios', icon: 'document-report' as const },
+        { href: '#', label: 'Integrações', icon: 'inbox' as const },
+    ];
+    
     const handleEditOrder = (order: Order) => {
         setSelectedOrder(order);
         setIsModalOpen(true);
@@ -70,72 +33,72 @@ const AdminLayout: React.FC = () => {
         setSelectedOrder(null);
     };
 
-    const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleUpdateOrder = async () => {
         if (!selectedOrder) return;
-    
-        const formData = new FormData(e.currentTarget);
-        const updatedStatus = formData.get('status') as Order['status'];
-    
+        setIsSaving(true);
         const { error } = await supabase
-          .from('orders')
-          .update({ status: updatedStatus })
-          .eq('id', selectedOrder.id);
-    
+            .from('orders')
+            .update({ status: selectedOrder.status })
+            .eq('id', selectedOrder.id);
+            
+        setIsSaving(false);
+
         if (error) {
-            addToast(`Erro ao atualizar pedido #${selectedOrder.id}`, 'error');
-            console.error(error);
+            addToast(`Erro ao atualizar pedido: ${error.message}`, 'error');
         } else {
-            addToast(`Pedido #${selectedOrder.id} atualizado com sucesso!`, 'success');
-            setOrders(orders.map(o => o.id === selectedOrder.id ? { ...o, status: updatedStatus } : o));
+            addToast('Pedido atualizado com sucesso!', 'success');
             handleCloseModal();
+            refreshData(); // Re-fetch data to update UI
         }
     };
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center">Carregando painel de administração...</div>
+        return <div className="h-screen w-screen flex items-center justify-center">Carregando dados...</div>;
     }
 
     return (
-        <div className="flex h-screen bg-brand-gray-100 font-sans">
-            <Sidebar setActiveView={setActiveView} activeView={activeView} />
+        <div className="flex h-screen bg-brand-gray-50">
+            <Sidebar navLinks={adminNavLinks} />
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Header />
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray-100 p-6 lg:p-8">
-                    {activeView === 'dashboard' && <Dashboard orders={orders} stats={stats} revenue={revenue} onEditOrder={handleEditOrder} />}
-                    {activeView === 'customers' && <Customers />}
+                <Header pageTitle="Dashboard" />
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray-50 p-8">
+                    <Dashboard
+                        stats={stats}
+                        revenue={revenue}
+                        orders={orders}
+                        onEditOrder={handleEditOrder}
+                    />
                 </main>
             </div>
-            <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={`Editar Pedido #${selectedOrder?.id}`}>
-                {selectedOrder && (
-                    <form onSubmit={handleUpdateOrder}>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-brand-gray-700">Cliente</label>
-                            <p className="mt-1 text-brand-gray-900">{selectedOrder.customer_name}</p>
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="status" className="block text-sm font-medium text-brand-gray-700">Status do Pedido</label>
+            {selectedOrder && (
+                <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={`Editar Pedido #${selectedOrder.id}`}>
+                    <div>
+                        <p><strong>Cliente:</strong> {selectedOrder.customer_name}</p>
+                        <div className="mt-4">
+                            <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status do Pedido</label>
                             <select
                                 id="status"
                                 name="status"
-                                defaultValue={selectedOrder.status}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-brand-gray-300 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm rounded-md"
+                                value={selectedOrder.status}
+                                onChange={(e) => setSelectedOrder({ ...selectedOrder, status: e.target.value as Order['status'] })}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                             >
                                 <option>Pendente</option>
-                                <option>Em Preparo</option>
-                                <option>Aguardando Coleta</option>
-                                <option>Em Trânsito</option>
+                                <option>Em Preparação</option>
+                                <option>Pronto para Coleta</option>
                                 <option>Entregue</option>
                                 <option>Cancelado</option>
                             </select>
                         </div>
-                        <div className="flex justify-end space-x-3 mt-6">
-                            <button type="button" onClick={handleCloseModal} className="px-4 py-2 bg-brand-gray-200 text-brand-gray-800 rounded-lg hover:bg-brand-gray-300">Cancelar</button>
-                            <button type="submit" className="px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-blue-600">Salvar</button>
+                        <div className="mt-6 flex justify-end space-x-3">
+                            <button onClick={handleCloseModal} type="button" className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">Cancelar</button>
+                            <button onClick={handleUpdateOrder} disabled={isSaving} type="button" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand-blue hover:bg-blue-700 focus:outline-none disabled:opacity-50">
+                                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                            </button>
                         </div>
-                    </form>
-                )}
-            </Modal>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 };

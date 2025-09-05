@@ -1,7 +1,4 @@
-// Fix: Provide content for types.ts, defining all shared types for the application.
-import type { User as SupabaseUser } from '@supabase/supabase-js';
-
-// Based on components/Icon.tsx
+// Fix: Added full type definitions to make this file a valid module.
 export type IconName =
   | 'currency-dollar'
   | 'shopping-bag'
@@ -23,44 +20,28 @@ export type IconName =
   | 'pencil'
   | 'plus';
 
-// Based on components/StatCard.tsx
 export interface Stat {
   title: string;
-  value: string | number;
+  value: number | string;
   change: string;
   changeType: 'increase' | 'decrease';
   iconName: IconName;
 }
 
-// User Profile, extending Supabase user with app-specific fields
-export interface UserProfile {
-    id: string;
-    email?: string;
-    full_name?: string;
-    avatar_url?: string;
-    role: 'admin' | 'customer' | 'delivery';
-}
-
-export type User = SupabaseUser & UserProfile;
-
-// Based on components/Dashboard.tsx and components/OrdersTable.tsx
-export type OrderStatus = 'Pendente' | 'Em Preparo' | 'Aguardando Coleta' | 'Em Trânsito' | 'Entregue' | 'Cancelado';
-
-export interface Customer {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-}
+export type OrderStatus = 'Pendente' | 'Em Preparação' | 'Pronto para Coleta' | 'Entregue' | 'Cancelado';
 
 export interface Order {
   id: number;
-  customer_id: string;
   customer_name: string;
-  service: string;
-  created_at: string;
+  service_type: string;
+  order_date: string;
   status: OrderStatus;
-  total: number;
-  delivery_person?: string;
+  total_price: number;
+  delivery_type: 'Coleta' | 'Entrega';
+}
+
+export interface UserProfile {
+    id: string;
+    username: string;
+    role: 'admin' | 'customer' | 'delivery';
 }
