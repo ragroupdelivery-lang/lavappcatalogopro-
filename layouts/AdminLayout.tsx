@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import Dashboard from '../components/Dashboard';
 import Modal from '../components/Modal';
 import { useData } from '../contexts/DataProvider';
 import { Order } from '../types';
@@ -9,18 +9,17 @@ import { useToast } from '../contexts/ToastContext';
 import { supabase } from '../supabaseClient';
 
 const AdminLayout: React.FC = () => {
-    const { stats, revenue, orders, loading, refreshData } = useData();
+    const { refreshData } = useData();
     const { addToast } = useToast();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const adminNavLinks = [
-        { href: '#', label: 'Dashboard', icon: 'view-grid' as const },
-        { href: '#', label: 'Pedidos', icon: 'shopping-bag' as const },
-        { href: '#', label: 'Clientes', icon: 'user-group' as const },
-        { href: '#', label: 'Relatórios', icon: 'document-report' as const },
-        { href: '#', label: 'Integrações', icon: 'inbox' as const },
+        { href: '/dashboard/overview', label: 'Dashboard', icon: 'view-grid' as const },
+        { href: '/dashboard/pedidos', label: 'Pedidos', icon: 'shopping-bag' as const },
+        { href: '/dashboard/clientes', label: 'Clientes', icon: 'user-group' as const },
+        { href: '/dashboard/relatorios', label: 'Relatórios', icon: 'document-report' as const },
     ];
     
     const handleEditOrder = (order: Order) => {
@@ -48,26 +47,20 @@ const AdminLayout: React.FC = () => {
         } else {
             addToast('Pedido atualizado com sucesso!', 'success');
             handleCloseModal();
-            refreshData(); // Re-fetch data to update UI
+            refreshData();
         }
     };
-
-    if (loading) {
-        return <div className="h-screen w-screen flex items-center justify-center">Carregando dados...</div>;
-    }
+    
+    // Pass context to Outlet
+    const outletContext = { handleEditOrder };
 
     return (
         <div className="flex h-screen bg-brand-gray-50">
             <Sidebar navLinks={adminNavLinks} />
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Header pageTitle="Dashboard" />
+                <Header pageTitle="Painel Administrativo" />
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray-50 p-8">
-                    <Dashboard
-                        stats={stats}
-                        revenue={revenue}
-                        orders={orders}
-                        onEditOrder={handleEditOrder}
-                    />
+                    <Outlet context={outletContext} />
                 </main>
             </div>
             {selectedOrder && (

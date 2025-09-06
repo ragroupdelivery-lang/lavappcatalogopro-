@@ -1,17 +1,23 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import StatCard from './StatCard';
 import RevenueChart from './RevenueChart';
 import OrdersTable from './OrdersTable';
-import { Order, Stat } from '../types';
+import { useData } from '../contexts/DataProvider';
+import { Order } from '../types';
 
-interface DashboardProps {
-    orders: Order[];
-    stats: Stat[];
-    revenue: { name: string; revenue: number }[];
-    onEditOrder: (order: Order) => void;
+interface DashboardContext {
+    handleEditOrder: (order: Order) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ orders, stats, revenue, onEditOrder }) => {
+const Dashboard: React.FC = () => {
+    const { orders, stats, revenue, loading } = useData();
+    const { handleEditOrder } = useOutletContext<DashboardContext>();
+
+    if (loading) {
+        return <p>Carregando dashboard...</p>
+    }
+
     return (
         <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -26,7 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, stats, revenue, onEditOrd
             </div>
 
             <div className="mt-8">
-                <OrdersTable orders={orders} onEditOrder={onEditOrder} isAdmin={true} />
+                <OrdersTable orders={orders} onEditOrder={handleEditOrder} isAdmin={true} />
             </div>
         </div>
     );
