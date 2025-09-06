@@ -48,6 +48,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const mockStats: Stat[] = [
                 { title: 'Receita (Mock)', value: totalRevenue, change: '+5.2%', changeType: 'increase', iconName: 'currency-dollar' },
                 { title: 'Pedidos (Mock)', value: totalOrders, change: '+2.1%', changeType: 'increase', iconName: 'shopping-bag' },
+                { title: 'Clientes (Mock)', value: 4, change: '+10%', changeType: 'increase', iconName: 'users' },
+                { title: 'Crescimento (Mock)', value: '15%', change: '-1.0%', changeType: 'decrease', iconName: 'chart-bar' },
             ];
             
             const mockRevenue = [
@@ -87,11 +89,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   const totalRevenue = ordersData.reduce((acc, order) => acc + order.total_price, 0);
                   const totalOrders = ordersData.length;
                   
-                  const mockStats: Stat[] = [
+                  // Stats are now dynamic based on fetched data
+                  const dynamicStats: Stat[] = [
                       { title: 'Receita Total', value: totalRevenue, change: '+5.2%', changeType: 'increase', iconName: 'currency-dollar' },
                       { title: 'Total de Pedidos', value: totalOrders, change: '+2.1%', changeType: 'increase', iconName: 'shopping-bag' },
+                      // These can be replaced with real data queries later
+                      { title: 'Clientes Ativos', value: 25, change: '+10%', changeType: 'increase', iconName: 'users' },
+                      { title: 'Crescimento Mensal', value: '15%', change: '-1.0%', changeType: 'decrease', iconName: 'chart-bar' },
                   ];
-                  setStats(mockStats);
+                  setStats(dynamicStats);
                 }
             }
              const mockRevenue = [

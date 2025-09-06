@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from './Icon';
 import { IconName } from '../types';
 
@@ -13,8 +14,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ navLinks }) => {
-    // In a real app, use a router like React Router to get the current path
-    const activePath = '/'; 
+    const location = useLocation();
+    const activePath = location.pathname;
 
     return (
         <aside className="w-64 bg-white flex flex-col border-r border-brand-gray-200">
@@ -28,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ navLinks }) => {
                         key={link.label}
                         href={link.href}
                         className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                            activePath === link.href
+                            activePath === link.href || (link.href !== '/' && activePath.startsWith(link.href))
                                 ? 'bg-brand-blue text-white'
                                 : 'text-brand-gray-600 hover:bg-brand-gray-100 hover:text-brand-gray-900'
                         }`}
