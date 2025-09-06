@@ -5,27 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LavaPro | Painel de Gestão de Lavanderia</title>
     
-    <!-- Meta Tags Essenciais para SEO e PWA -->
     <meta name="description" content="Um painel moderno para gerenciar seu serviço de lavanderia, com métricas, pedidos e gestão de clientes.">
     <meta name="theme-color" content="#3B82F6">
 
-    <!-- Favicon e Manifest do PWA -->
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="manifest" href="/manifest.json">
     
-    <!-- Otimização de Performance: Pré-conexão com o CDN de módulos -->
     <link rel="preconnect" href="https://esm.sh" crossorigin>
 
-    <!-- Estilos Globais -->
     <link rel="stylesheet" href="/index.css">
 
-    <!-- Import Map: Definição única, limpa e estável das dependências -->
     <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react": "https://esm.sh/react@19.1.1",
+    "react-dom/client": "https://esm.sh/react-dom@19.1.1/client",
     "react-router-dom": "https://esm.sh/react-router-dom@6.23.1",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.43.4",
     "recharts": "https://esm.sh/recharts@2.12.7",
@@ -38,7 +32,6 @@
 <body>
     <noscript>Você precisa habilitar o JavaScript para rodar esta aplicação.</noscript>
     <div id="root"></div>
-    <!-- Carregamento do script principal de forma não-bloqueante -->
-    <script type="module" defer src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
