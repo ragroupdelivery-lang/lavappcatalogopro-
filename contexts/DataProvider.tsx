@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Order, Stat, Customer, Service } from '../types';
+import { Order, Stat, Customer, Service, NewOrder } from '../types'; // Import NewOrder
 import { useUser } from './UserContext';
 import { supabase } from '../supabaseClient';
 
@@ -10,6 +10,7 @@ interface DataContextType {
   customers: Customer[];
   services: Service[];
   loading: boolean;
+  addOrder: (order: NewOrder) => Promise<void>; // Add addOrder to the type
   refreshData: () => void;
 }
 
@@ -33,14 +34,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    // If user is still loading, wait.
     if (userLoading) return;
 
     setLoading(true);
     try {
       const tenantId = tenant?.id;
 
-      // Build services query conditionally to fix the syntax error
       let servicesQuery = supabase.from('services').select('*');
       if (tenantId) {
         servicesQuery = servicesQuery.eq('tenant_id', tenantId);
@@ -50,11 +49,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (servicesError) throw servicesError;
       setServices(servicesData || []);
 
-      // Fetch tenant-specific data only if a tenant exists
       if (tenantId) {
+        // Fetch orders, customers, etc.
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select('*')
+          .select('*, services(*), customers(*)') // Join with services and customers
           .eq('tenant_id', tenantId);
         if (ordersError) throw ordersError;
         setOrders(ordersData || []);
@@ -66,16 +65,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (customersError) throw customersError;
         setCustomers(customersData || []);
         
-        // Mock stats and revenue for demonstration as this logic is usually complex
-        const totalRevenue = (ordersData || []).reduce((sum, order) => sum + order.total_price, 0);
+        // Mock stats and revenue
+        const totalRevenue = (ordersData || []).reduce((sum, order) => sum + (order.services?.price || 0), 0);
         const totalOrders = (ordersData || []).length;
         const totalCustomers = (customersData || []).length;
+        const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
         setStats([
-          { title: 'Receita Total', value: totalRevenue, change: '+12.5%', changeType: 'increase', iconName: 'currency-dollar' },
+          { title: 'Receita Total', value: totalRevenue, change: '+12.5%', changeType: 'increase', iconName: 'currency-dollar', format: 'currency' },
           { title: 'Total de Pedidos', value: totalOrders, change: '+5.2%', changeType: 'increase', iconName: 'shopping-bag' },
           { title: 'Clientes', value: totalCustomers, change: '+2', changeType: 'increase', iconName: 'users' },
-          { title: 'Ticket Médio', value: totalOrders > 0 ? totalRevenue / totalOrders : 0, change: '+3.1%', changeType: 'increase', iconName: 'chart-bar' },
+          { title: 'Ticket Médio', value: averageTicket, change: '+3.1%', changeType: 'increase', iconName: 'chart-bar', format: 'currency' },
         ]);
 
         setRevenue([
@@ -84,7 +84,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             { name: 'Jul', revenue: 7100 },
         ]);
       } else {
-        // Clear tenant-specific data if no tenant
         setOrders([]);
         setCustomers([]);
         setStats([]);
@@ -97,12 +96,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(false);
     }
   }, [tenant, userLoading]);
+
+  const addOrder = useCallback(async (order: NewOrder) => {
+    if (!tenant) throw new Error("No tenant available to associate the order with.");
+
+    const service = services.find(s => s.id === order.service_id);
+    if (!service) throw new Error("Service not found for the order.");
+
+    const newOrderPayload = {
+      ...order,
+      tenant_id: tenant.id,
+      total_price: service.price,
+    };
+
+    const { error } = await supabase.from('orders').insert([newOrderPayload]);
+    if (error) {
+      console.error("Error adding order:", error);
+      throw error;
+    } else {
+      // Refresh data to show the new order and update stats
+      await fetchData();
+    }
+  }, [tenant, services, fetchData]);
   
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const value = { orders, stats, revenue, customers, services, loading, refreshData: fetchData };
+  const value = { orders, stats, revenue, customers, services, loading, addOrder, refreshData: fetchData };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };

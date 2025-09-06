@@ -6,7 +6,15 @@ import Modal from '../components/Modal';
 import { supabase } from '../supabaseClient';
 import { useToast } from '../contexts/ToastContext';
 
-// Formulário de Edição movido para dentro da página que o utiliza
+// Mapeamento de status para exibição
+const statusTranslations: { [key in OrderStatus]: string } = {
+    pending: 'Pendente',
+    in_progress: 'Em Preparação',
+    ready: 'Pronto para Coleta',
+    delivered: 'Entregue',
+    canceled: 'Cancelado',
+};
+
 const OrderEditForm: React.FC<{ order: Order; onClose: () => void; onSave: (updatedOrder: Order) => void }> = ({ order, onClose, onSave }) => {
     const [status, setStatus] = useState<OrderStatus>(order.status);
 
@@ -19,7 +27,9 @@ const OrderEditForm: React.FC<{ order: Order; onClose: () => void; onSave: (upda
         <form onSubmit={handleSubmit}>
             <div className="mb-4">
                 <p><strong>Pedido:</strong> #{order.id}</p>
-                <p><strong>Cliente:</strong> {order.customer_name}</p>
+                {/* Use os dados join para mostrar o nome do cliente */}
+                <p><strong>Cliente:</strong> {order.customers?.name || 'Cliente não encontrado'}</p>
+                 <p><strong>Serviço:</strong> {order.services?.name || 'Serviço não encontrado'}</p>
             </div>
             <div className="mb-4">
                 <label htmlFor="status" className="block text-sm font-medium text-brand-gray-700 mb-1">
@@ -31,11 +41,10 @@ const OrderEditForm: React.FC<{ order: Order; onClose: () => void; onSave: (upda
                     onChange={(e) => setStatus(e.target.value as OrderStatus)}
                     className="w-full px-4 py-2 border border-brand-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
                 >
-                    <option>Pendente</option>
-                    <option>Em Preparação</option>
-                    <option>Pronto para Coleta</option>
-                    <option>Entregue</option>
-                    <option>Cancelado</option>
+                    {/* Mapeie as chaves do objeto de tradução para criar as opções */}
+                    {Object.entries(statusTranslations).map(([key, value]) => (
+                        <option key={key} value={key}>{value}</option>
+                    ))}
                 </select>
             </div>
             <div className="flex justify-end space-x-3 mt-6">

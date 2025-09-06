@@ -62,26 +62,35 @@ export interface Service {
   icon: IconName;
 }
 
-export type OrderStatus = 'Pendente' | 'Em Preparação' | 'Pronto para Coleta' | 'Entregue' | 'Cancelado';
+export type OrderStatus = 'pending' | 'in_progress' | 'ready' | 'delivered' | 'canceled';
 
-// Representa um pedido feito por um cliente de uma lavanderia.
+// Representa um pedido existente.
 export interface Order {
   id: number;
-  tenant_id: string; // UUID, FK to tenants
-  customer_id: string; // UUID, FK to customers
-  customer_name: string; // Denormalized for quick display
-  order_date: string;
+  created_at: string;
   status: OrderStatus;
-  total_price: number;
-  delivery_type: 'Coleta' | 'Entrega';
+  tenant_id: string;
+  customer_id: string;
+  service_id: number;
+  delivery_address: string;
+  // Joined data from other tables
+  services?: Service;
+  customers?: Customer;
 }
+
+// Representa os dados para a criação de um novo pedido.
+export type NewOrder = Omit<Order, 'id' | 'created_at' | 'services' | 'customers' | 'tenant_id' > & {
+  total_price?: number;
+};
+
 
 // --- Tipos para UI ---
 
 export interface Stat {
   title: string;
-  value: number | string;
+  value: number;
   change: string;
   changeType: 'increase' | 'decrease';
   iconName: IconName;
+  format?: 'currency' | 'integer';
 }
