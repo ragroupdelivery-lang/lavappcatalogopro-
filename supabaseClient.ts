@@ -1,15 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-// As chaves agora serão lidas das variáveis de ambiente configuradas no Netlify.
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+// Para esta aplicação, é seguro e correto colocar a URL e a chave anônima (pública) diretamente aqui.
+// A segurança é garantida pela Row Level Security (RLS) no seu banco de dados Supabase.
+// A URL e a chave foram preenchidas com base nas suas capturas de tela.
 
-// A verificação de erro agora procura pela ausência das variáveis de ambiente.
-export const supabaseInitializationError =
-  !supabaseUrl || !supabaseAnonKey
-    ? new Error('Configuração do Supabase incompleta. Adicione SUPABASE_URL e SUPABASE_ANON_KEY às variáveis de ambiente no seu provedor de hospedagem (ex: Netlify).')
-    : null;
+const supabaseUrl = 'https://aithmpkvrwmxxlvtqmzn.supabase.co';
 
-// O cliente é criado com as variáveis de ambiente.
-// Se elas não existirem, o erro acima será usado para ativar o modo de demonstração.
+// Chave 'anon' (pública) do seu painel Supabase.
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpdGhtcGt2cndteHhsanRxbXpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5NzU4MzUsImV4cCI6MjAzMTU1MTgzNX0.5yRgrMXI4iGdiq7s2NUr3VLn5pM-TeUu1_2L8o-FdEw';
+
+// A verificação de erro não é mais necessária, pois a chave está preenchida.
+export const supabaseInitializationError = null;
+
+// O cliente agora é criado com suas credenciais reais.
 export const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
