@@ -16,7 +16,7 @@ const KanbanColumn: React.FC<{ title: string; orders: Order[] }> = ({ title, ord
           <div key={order.id} className="bg-white p-4 rounded-md shadow-sm border">
             <p className="font-semibold text-brand-gray-800">Pedido #{order.id}</p>
             <p className="text-sm text-brand-gray-600 mt-1">{order.customer_name}</p>
-            <p className="text-sm text-brand-gray-500 mt-2">{order.service_type}</p>
+            {/* FIX: The 'service_type' property does not exist on the Order type. The corresponding element was removed. */}
             <div className="mt-3 pt-3 border-t flex justify-between items-center">
                 <span className="text-sm font-bold text-brand-blue">
                     {order.total_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

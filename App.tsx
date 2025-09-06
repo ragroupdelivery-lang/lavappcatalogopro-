@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, Outlet } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ToastProvider } from './contexts/ToastContext';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { DataProvider } from './contexts/DataProvider';
-import { supabase } from './supabaseClient';
 
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
@@ -18,72 +17,89 @@ import OrdersPage from './pages/OrdersPage';
 import CustomersPage from './pages/CustomersPage';
 import ReportsPage from './pages/ReportsPage';
 import CustomerOrders from './pages/CustomerOrders';
+import SettingsPage from './pages/SettingsPage';
 
 const LoadingScreen: React.FC = () => (
     <div className="h-screen w-screen flex items-center justify-center bg-brand-gray-50">
-        <p className="text-lg text-brand-gray-600">Carregando...</p>
+        <p className="text-lg text-brand-gray-600 animate-pulse">Carregando Sistema...</p>
     </div>
 );
 
-const RoleBasedLayout: React.FC = () => {
-    const { profile, signOut } = useUser();
-    
-    switch (profile?.role) {
-        case 'admin':
-            return <AdminLayout />;
-        case 'customer':
-            return <CustomerLayout />;
-        case 'delivery':
-            return <DeliveryLayout />;
-        default:
-            return (
-                <div className="h-screen w-screen flex flex-col items-center justify-center">
-                    <p>Função de usuário desconhecida. Redirecionando...</p>
-                    <button onClick={signOut} className="mt-4 text-brand-blue">Sair</button>
-                </div>
-            );
-    }
-};
+// Componente que decide o layout com base na função do usuário
+const RoleBasedRedirect: React.FC = () => {
+    const { profile, loading } = useUser();
 
-const ProtectedRoute: React.FC = () => {
-    const { session, loading, profile } = useUser();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        if (!loading && !session) {
-            navigate('/login');
-        }
-    }, [session, loading, navigate]);
-
-    if (loading || !profile) {
+    if (loading) {
         return <LoadingScreen />;
     }
 
-    return <RoleBasedLayout />;
+    // A lógica foi estendida para incluir o entregador.
+    if (profile?.role === 'owner' || profile?.role === 'staff') {
+        return <AdminLayout />;
+    }
+    
+    // Supondo que o perfil de entregador tenha a role 'delivery'
+    if (profile?.role === 'delivery') {
+        return <DeliveryLayout />;
+    }
+
+    // Para qualquer outro caso (cliente ou perfil indefinido), renderiza o layout do cliente.
+    return <CustomerLayout />;
+};
+
+// Rota protegida que garante que o usuário esteja logado para acessar o dashboard
+const ProtectedRoute: React.FC = () => {
+    const { session, loading } = useUser();
+
+    if (loading) {
+        return <LoadingScreen />;
+    }
+
+    if (!session) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // DataProvider envolve todas as rotas protegidas
+    return (
+        <DataProvider>
+            <Outlet />
+        </DataProvider>
+    );
 };
 
 const App: React.FC = () => {
     return (
         <ToastProvider>
             <UserProvider>
-                <DataProvider>
-                    <Router>
-                        <Routes>
-                            <Route path="/" element={<CatalogPage />} />
-                            <Route path="/login" element={<Auth />} />
-                            <Route path="/dashboard" element={<ProtectedRoute />}>
-                                {/* Admin Routes */}
-                                <Route path="" element={<Navigate to="overview" replace />} />
+                <Router>
+                    <Routes>
+                        {/* Rotas Públicas */}
+                        <Route path="/" element={<DataProvider><CatalogPage /></DataProvider>} />
+                        <Route path="/login" element={<Auth />} />
+
+                        {/* Rota Protegida para o Dashboard */}
+                        <Route element={<ProtectedRoute />}>
+                            <Route path="/dashboard" element={<RoleBasedRedirect />}>
+                                {/* Sub-rotas para Admin */}
+                                <Route index element={<Navigate to="overview" replace />} />
                                 <Route path="overview" element={<Dashboard />} />
                                 <Route path="pedidos" element={<OrdersPage />} />
                                 <Route path="clientes" element={<CustomersPage />} />
                                 <Route path="relatorios" element={<ReportsPage />} />
-                                {/* Customer Routes */}
+                                <Route path="configuracoes" element={<SettingsPage />} />
+                                
+                                {/* Sub-rotas para Cliente */}
                                 <Route path="meus-pedidos" element={<CustomerOrders />} />
+
+                                {/* A rota para entregas será a raiz do DeliveryLayout */}
+                                {/* O KanbanBoard será renderizado diretamente pelo DeliveryLayout */}
                             </Route>
-                        </Routes>
-                    </Router>
-                </DataProvider>
+                        </Route>
+                        
+                        {/* Rota de fallback */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </Router>
             </UserProvider>
         </ToastProvider>
     );

@@ -11,6 +11,7 @@ interface DashboardContext {
 }
 
 const Dashboard: React.FC = () => {
+    // FIX: The 'revenue' property is now available in the useData context.
     const { orders, stats, revenue, loading } = useData();
     const { handleEditOrder } = useOutletContext<DashboardContext>();
 
