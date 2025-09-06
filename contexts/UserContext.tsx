@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, supabaseInitializationError } from '../supabaseClient';
 import { Session, User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
 
@@ -8,6 +8,7 @@ interface UserContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  initializationError: Error | null;
   signOut: () => void;
 }
 
@@ -18,8 +19,44 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializationError, setInitializationError] = useState<Error | null>(supabaseInitializationError);
 
   useEffect(() => {
+    // Se o supabase não estiver configurado, cria uma sessão mock para modo de demonstração.
+    if (initializationError) {
+      console.warn("MODO DE DEMONSTRAÇÃO: A configuração do Supabase está ausente. Usando dados mockados. Edite `supabaseClient.ts` para conectar ao seu projeto.");
+      
+      const mockUser: User = {
+        id: 'mock-user-id',
+        app_metadata: { provider: 'email' },
+        user_metadata: { name: 'Admin de Teste' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        email: 'admin@lavapro.com'
+      };
+      
+      const mockProfile: UserProfile = {
+          id: 'mock-user-id',
+          username: 'Admin de Teste',
+          role: 'admin'
+      };
+
+      const mockSession: Session = {
+          access_token: 'mock-access-token',
+          token_type: 'bearer',
+          user: mockUser,
+          refresh_token: 'mock-refresh-token',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600
+      };
+
+      setSession(mockSession);
+      setUser(mockUser);
+      setProfile(mockProfile);
+      setLoading(false);
+      return;
+    }
+
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
@@ -39,10 +76,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initializationError]);
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !loading && !initializationError) {
       const fetchProfile = async () => {
         const { data, error } = await supabase
           .from('profiles')
@@ -61,10 +98,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else if (!user) {
       setProfile(null);
     }
-  }, [user, loading]);
+  }, [user, loading, initializationError]);
 
   const signOut = () => {
-    supabase.auth.signOut();
+    if (!initializationError) {
+      supabase.auth.signOut();
+    }
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -75,6 +114,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     profile,
     loading,
+    initializationError,
     signOut,
   };
 

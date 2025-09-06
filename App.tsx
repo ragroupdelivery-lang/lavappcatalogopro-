@@ -1,25 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { ToastProvider } from './contexts/ToastContext';
 import { UserProvider, useUser } from './contexts/UserContext';
-import Auth from './components/Auth';
-import AdminLayout from './layouts/AdminLayout';
-import CustomerLayout from './layouts/CustomerLayout';
-import DeliveryLayout from './layouts/DeliveryLayout';
 import { DataProvider } from './contexts/DataProvider';
 import { supabase } from './supabaseClient';
 
-const AppContent: React.FC = () => {
-    const { session, profile, loading } = useUser();
+// Layouts
+import AdminLayout from './layouts/AdminLayout';
+import CustomerLayout from './layouts/CustomerLayout';
+import DeliveryLayout from './layouts/DeliveryLayout';
 
-    if (loading) {
-        return <div className="h-screen w-screen flex items-center justify-center">Carregando...</div>;
-    }
+// Pages
+import Auth from './components/Auth';
+import CatalogPage from './pages/CatalogPage';
 
-    if (!session || !profile) {
-        return <Auth />;
-    }
+const LoadingScreen: React.FC = () => (
+    <div className="h-screen w-screen flex items-center justify-center">Carregando...</div>
+);
 
-    switch (profile.role) {
+const DashboardController: React.FC = () => {
+    const { profile } = useUser();
+    
+    switch (profile?.role) {
         case 'admin':
             return <AdminLayout />;
         case 'customer':
@@ -29,11 +31,28 @@ const AppContent: React.FC = () => {
         default:
             return (
                 <div className="h-screen w-screen flex flex-col items-center justify-center">
-                    <p>Não foi possível determinar sua função. Por favor, entre em contato com o suporte.</p>
+                    <p>Função de usuário desconhecida. Redirecionando...</p>
                     <button onClick={() => supabase.auth.signOut()} className="mt-4 text-brand-blue">Sair</button>
                 </div>
             );
     }
+};
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { session, loading } = useUser();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!loading && !session) {
+            navigate('/login');
+        }
+    }, [session, loading, navigate]);
+
+    if (loading || !session) {
+        return <LoadingScreen />;
+    }
+
+    return <>{children}</>;
 };
 
 const App: React.FC = () => {
@@ -41,7 +60,20 @@ const App: React.FC = () => {
         <ToastProvider>
             <UserProvider>
                 <DataProvider>
-                    <AppContent />
+                    <Router>
+                        <Routes>
+                            <Route path="/" element={<CatalogPage />} />
+                            <Route path="/login" element={<Auth />} />
+                            <Route 
+                                path="/dashboard" 
+                                element={
+                                    <ProtectedRoute>
+                                        <DashboardController />
+                                    </ProtectedRoute>
+                                } 
+                            />
+                        </Routes>
+                    </Router>
                 </DataProvider>
             </UserProvider>
         </ToastProvider>

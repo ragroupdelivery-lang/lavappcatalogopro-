@@ -18,7 +18,8 @@ export type IconName =
   | 'user-group'
   | 'inbox'
   | 'pencil'
-  | 'plus';
+  | 'plus'
+  | 'sparkles';
 
 export interface Stat {
   title: string;
@@ -44,4 +45,12 @@ export interface UserProfile {
     id: string;
     username: string;
     role: 'admin' | 'customer' | 'delivery';
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  icon: IconName;
 }
